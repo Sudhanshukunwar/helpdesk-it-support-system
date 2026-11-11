@@ -48,3 +48,15 @@ New sign-ups are Employees. Admins change roles in Admin > Users. Change `JWT_SE
 
 ## SLA and escalation
 A ticket's due time = creation time + resolution hours for its priority. A scheduler runs every minute: open/in-progress tickets past due are flagged as breached and admins (plus the assignee, or all support agents if unassigned) get a notification.
+
+## Security
+- **Access tokens** are JWTs that expire after 15 minutes. They carry an issuer, a unique id, a type (`access`) and a token version.
+- **Refresh tokens** are random, valid 7 days, stored only as SHA-256 hashes, and single-use. Each refresh issues a new one. If a used token appears again, all sessions of that user are revoked.
+- The frontend refreshes silently on a 401 and retries the request once.
+- **Instant revocation:** changing a password, "Sign out on all devices" and deactivating a user bump the user's token version, which invalidates every access token already issued.
+- **Roles are read from the database** on each request, so role changes apply immediately.
+- **Lockout:** 5 wrong passwords lock the account for 15 minutes (`app.security.*`).
+- **Password rule:** 8+ characters with a letter and a number. Passwords are hashed with BCrypt.
+- The app refuses to start if `JWT_SECRET` is shorter than 32 characters.
+
+Endpoints: `POST /api/auth/refresh`, `POST /api/auth/logout`, `PUT /api/account/password`, `POST /api/account/sign-out-everywhere`.

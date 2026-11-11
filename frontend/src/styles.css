@@ -142,3 +142,6 @@ tr.clickable:hover td { background: #f7faf9; }
   .span2 { grid-column: auto; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+.notice { background: #e6f4f1; color: #0b524c; border: 1px solid #bfe0da; padding: 9px 12px; border-radius: var(--radius); margin: 10px 0; font-size: 14px; }
+.panel.narrow { max-width: 480px; }

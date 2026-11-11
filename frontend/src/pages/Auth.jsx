@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth';
 import { ErrorNote } from '../ui';
 
 export default function Auth({ mode }) {
   const { user, login, register } = useAuth();
   const nav = useNavigate();
+  const notice = useLocation().state?.notice;
   const [f, setF] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -30,9 +31,11 @@ export default function Auth({ mode }) {
       <form className="auth-card" onSubmit={submit}>
         <h1>{isLogin ? 'Sign in to HelpDesk' : 'Create your account'}</h1>
         <p className="muted">{isLogin ? 'Track your IT requests and see who is on them.' : 'Employees can raise and follow tickets.'}</p>
+        {notice && <div className="notice">{notice}</div>}
         {!isLogin && (<label>Name<input required value={f.name} onChange={set('name')} /></label>)}
         <label>Work email<input type="email" required value={f.email} onChange={set('email')} /></label>
-        <label>Password<input type="password" required minLength={6} value={f.password} onChange={set('password')} /></label>
+        <label>Password<input type="password" required minLength={isLogin ? 1 : 8} value={f.password} onChange={set('password')} /></label>
+        {!isLogin && <p className="muted small">At least 8 characters, with a letter and a number.</p>}
         <ErrorNote error={error} />
         <button className="btn primary" disabled={busy}>{isLogin ? 'Sign in' : 'Create account'}</button>
         <p className="muted small">

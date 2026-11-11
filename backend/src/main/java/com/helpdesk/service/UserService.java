@@ -18,6 +18,7 @@ import java.util.List;
 @Transactional
 public class UserService {
     private final UserRepository users;
+    private final RefreshTokenService refreshTokens;
 
     @Transactional(readOnly = true)
     public List<UserResponse> all() { return users.findAll().stream().map(this::toDto).toList(); }
@@ -29,7 +30,13 @@ public class UserService {
         var u = users.findById(id).orElseThrow(() -> new NotFoundException("User not found"));
         if (u.getEmail().equals(adminEmail)) throw new BadRequestException("You can't change your own role or status");
         if (r.role() != null) u.setRole(r.role());
-        if (r.active() != null) u.setActive(r.active());
+        if (r.active() != null) {
+            u.setActive(r.active());
+            if (!r.active()) {
+                u.setTokenVersion(u.getTokenVersion() + 1);   // access tokens stop working at once
+                refreshTokens.revokeAll(u.getId());           // and they cannot get new ones
+            }
+        }
         return toDto(u);
     }
 

@@ -2,6 +2,7 @@ package com.helpdesk.controller;
 
 import com.helpdesk.dto.AuthDtos.AuthResponse;
 import com.helpdesk.dto.AuthDtos.LoginRequest;
+import com.helpdesk.dto.AuthDtos.RefreshRequest;
 import com.helpdesk.dto.AuthDtos.RegisterRequest;
 import com.helpdesk.service.AuthService;
 import jakarta.validation.Valid;
@@ -19,4 +20,10 @@ public class AuthController {
 
     @PostMapping("/login")
     public AuthResponse login(@Valid @RequestBody LoginRequest r) { return auth.login(r); }
+
+    @PostMapping("/refresh")
+    public AuthResponse refresh(@Valid @RequestBody RefreshRequest r) { return auth.refresh(r.refreshToken()); }
+
+    @PostMapping("/logout")
+    public void logout(@Valid @RequestBody RefreshRequest r) { auth.logout(r.refreshToken()); }
 }

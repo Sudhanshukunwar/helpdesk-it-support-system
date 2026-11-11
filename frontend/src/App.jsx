@@ -8,6 +8,7 @@ import TicketDetail from './pages/TicketDetail';
 import Notifications from './pages/Notifications';
 import Analytics from './pages/Analytics';
 import Admin from './pages/Admin';
+import Account from './pages/Account';
 
 function Layout() {
   const { user, logout } = useAuth();
@@ -33,6 +34,7 @@ function Layout() {
           </NavLink>
           {user.role !== 'EMPLOYEE' && <NavLink to="/analytics" className={link}>Analytics</NavLink>}
           {user.role === 'ADMIN' && <NavLink to="/admin" className={link}>Admin</NavLink>}
+          <NavLink to="/account" className={link}>Account</NavLink>
         </nav>
         <div className="me">
           <div className="me-name">{user.name}</div>
@@ -66,6 +68,7 @@ export default function App() {
             <Route path="/" element={<Tickets />} />
             <Route path="/tickets/:id" element={<TicketDetail />} />
             <Route path="/notifications" element={<Notifications />} />
+            <Route path="/account" element={<Account />} />
             <Route path="/analytics" element={<RoleOnly allow={['ADMIN', 'SUPPORT']}><Analytics /></RoleOnly>} />
             <Route path="/admin" element={<RoleOnly allow={['ADMIN']}><Admin /></RoleOnly>} />
           </Route>

@@ -2,6 +2,7 @@ package com.helpdesk.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
@@ -25,4 +26,15 @@ public class User {
 
     @Builder.Default
     private boolean active = true;
+
+    /** Consecutive wrong-password attempts since the last success or lock. */
+    @Column(columnDefinition = "int default 0")
+    private int failedAttempts;
+
+    /** Login is refused until this time. */
+    private LocalDateTime lockedUntil;
+
+    /** Part of every access token. Bumping it invalidates all tokens issued before. */
+    @Column(columnDefinition = "int default 0")
+    private int tokenVersion;
 }
