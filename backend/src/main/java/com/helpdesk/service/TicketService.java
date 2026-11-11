@@ -23,6 +23,7 @@ public class TicketService {
     private final CommentRepository comments;
     private final SlaPolicyRepository slaRepo;
     private final NotificationService notifications;
+    private final HistoryService history;
 
     // ---------- helpers ----------
     private User current(String email) {
@@ -31,6 +32,11 @@ public class TicketService {
 
     private Ticket find(Long id) {
         return tickets.findById(id).orElseThrow(() -> new NotFoundException("Ticket not found"));
+    }
+
+    private static String nice(Enum<?> e) {
+        String n = e.name();
+        return n.charAt(0) + n.substring(1).toLowerCase().replace('_', ' ');
     }
 
     private void checkAccess(Ticket t, User u) {
@@ -74,6 +80,7 @@ public class TicketService {
                 .title(r.title().trim()).description(r.description()).category(r.category())
                 .status(TicketStatus.OPEN).priority(r.priority())
                 .createdBy(user).dueAt(LocalDateTime.now().plusHours(hours)).build());
+        history.record(t, user, HistoryAction.CREATED, "Created with " + nice(t.getPriority()) + " priority");
         notifications.notifyRole(Role.ADMIN, "New " + t.getPriority() + " ticket #" + t.getId() + ": " + t.getTitle(), t.getId());
         return toDto(t);
     }
@@ -101,8 +108,16 @@ public class TicketService {
         var t = find(id);
         var agent = users.findById(assigneeId).orElseThrow(() -> new NotFoundException("Assignee not found"));
         if (agent.getRole() != Role.SUPPORT) throw new BadRequestException("Assignee must be a support agent");
+        var previous = t.getAssignedTo();
+        var oldStatus = t.getStatus();
         t.setAssignedTo(agent);
-        if (t.getStatus() == TicketStatus.OPEN) t.setStatus(TicketStatus.IN_PROGRESS);
+        history.record(t, actor, HistoryAction.ASSIGNED, previous == null
+                ? "Assigned to " + agent.getName()
+                : "Reassigned from " + previous.getName() + " to " + agent.getName());
+        if (oldStatus == TicketStatus.OPEN) {
+            t.setStatus(TicketStatus.IN_PROGRESS);
+            history.record(t, actor, HistoryAction.STATUS_CHANGED, "Open → In progress");
+        }
         notifications.notify(agent, "Ticket #" + t.getId() + " assigned to you: " + t.getTitle(), t.getId());
         notifyParties(t, actor, "Ticket #" + t.getId() + " was assigned to " + agent.getName());
         return toDto(t);
@@ -112,8 +127,13 @@ public class TicketService {
         var agent = current(email);
         var t = find(id);
         if (t.getAssignedTo() != null) throw new BadRequestException("Ticket is already assigned");
+        var oldStatus = t.getStatus();
         t.setAssignedTo(agent);
-        if (t.getStatus() == TicketStatus.OPEN) t.setStatus(TicketStatus.IN_PROGRESS);
+        history.record(t, agent, HistoryAction.CLAIMED, "Picked up by " + agent.getName());
+        if (oldStatus == TicketStatus.OPEN) {
+            t.setStatus(TicketStatus.IN_PROGRESS);
+            history.record(t, agent, HistoryAction.STATUS_CHANGED, "Open → In progress");
+        }
         notifyParties(t, agent, agent.getName() + " picked up ticket #" + t.getId());
         return toDto(t);
     }
@@ -126,14 +146,24 @@ public class TicketService {
             throw new AccessDeniedException("Employees can only close their own tickets");
         if (u.getRole() == Role.SUPPORT && t.getAssignedTo() == null)
             throw new BadRequestException("Claim the ticket before changing its status");
+        var old = t.getStatus();
+        if (old == status) return toDto(t);
         t.setStatus(status);
         if (status == TicketStatus.RESOLVED || status == TicketStatus.CLOSED) {
             if (t.getResolvedAt() == null) t.setResolvedAt(LocalDateTime.now());
         } else {
             t.setResolvedAt(null);
         }
-        notifyParties(t, u, "Ticket #" + t.getId() + " is now " + status.name().replace('_', ' '));
+        history.record(t, u, HistoryAction.STATUS_CHANGED, nice(old) + " → " + nice(status));
+        notifyParties(t, u, "Ticket #" + t.getId() + " is now " + nice(status).toLowerCase());
         return toDto(t);
+    }
+
+    @Transactional(readOnly = true)
+    public List<HistoryResponse> history(Long id, String email) {
+        var t = find(id);
+        checkAccess(t, current(email));
+        return history.forTicket(id);
     }
 
     // ---------- comments ----------

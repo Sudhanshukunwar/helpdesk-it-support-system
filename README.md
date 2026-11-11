@@ -1,5 +1,7 @@
 # HelpDesk – IT Support Management System
 
+![CI](https://github.com/Sudhanshukunwar/helpdesk-it-support-system/actions/workflows/ci.yml/badge.svg)
+
 React (Vite) · Spring Boot 3 · MySQL · JPA/Hibernate · Spring Security + JWT · Docker
 
 ## Run everything
@@ -60,3 +62,16 @@ A ticket's due time = creation time + resolution hours for its priority. A sched
 - The app refuses to start if `JWT_SECRET` is shorter than 32 characters.
 
 Endpoints: `POST /api/auth/refresh`, `POST /api/auth/logout`, `PUT /api/account/password`, `POST /api/account/sign-out-everywhere`.
+
+## Ticket history
+Every creation, assignment, pick-up, status change and SLA breach is stored in `ticket_history` (who, what, when) and shown as an Activity timeline on the ticket page. `GET /api/tickets/{id}/history` (same access rules as the ticket).
+
+## Tests
+```bash
+cd backend && mvn test        # JWT, login lockout, refresh-token rotation, ticket access rules, SLA job
+cd frontend && npm test       # UI helpers
+```
+GitHub Actions runs both on every push (`.github/workflows/ci.yml`).
+
+## Deploying
+See [DEPLOY.md](DEPLOY.md) for a step-by-step guide (VPS + Docker + automatic HTTPS) and `docker-compose.prod.yml`.

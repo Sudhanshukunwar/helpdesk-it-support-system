@@ -22,9 +22,12 @@ public class JwtService {
     private final long accessMs;
 
     public JwtService(@Value("${app.jwt.secret}") String secret,
-                      @Value("${app.jwt.access-expiration-ms}") long accessMs) {
+                      @Value("${app.jwt.access-expiration-ms}") long accessMs,
+                      @Value("${app.production:false}") boolean production) {
         if (secret.getBytes(StandardCharsets.UTF_8).length < 32)
             throw new IllegalStateException("app.jwt.secret must be at least 32 characters long");
+        if (secret.startsWith("change-this") && production)
+            throw new IllegalStateException("Refusing to start in production with the demo JWT secret. Set JWT_SECRET.");
         if (secret.startsWith("change-this"))
             log.warn("Using the demo JWT secret. Set JWT_SECRET to a long random value before deploying.");
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));

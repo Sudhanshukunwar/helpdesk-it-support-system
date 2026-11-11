@@ -36,4 +36,7 @@ public class Dtos {
     public record AnalyticsSummary(long total, Map<String, Long> byStatus, Map<String, Long> byPriority,
                                    double avgResolutionHours, double slaBreachPercent,
                                    List<AgentLoad> agentLoad) {}
+
+    public record HistoryResponse(Long id, HistoryAction action, String details, String actorName,
+                                  LocalDateTime createdAt) {}
 }

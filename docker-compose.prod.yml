@@ -1,0 +1,54 @@
+# Production-style stack: HTTPS via Caddy, only ports 80/443 are exposed.
+# Usage: copy .env.example to .env, fill it in, then:
+#   docker compose -f docker-compose.prod.yml up -d --build
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: helpdesk
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+    volumes: [dbdata:/var/lib/mysql]
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      retries: 30
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      DB_URL: jdbc:mysql://db:3306/helpdesk?serverTimezone=UTC
+      DB_USER: root
+      DB_PASS: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGIN: https://${DOMAIN}
+      APP_PRODUCTION: "true"
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      SEED_DEMO_SUPPORT: "false"
+    depends_on:
+      db: { condition: service_healthy }
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: same-origin
+    restart: unless-stopped
+    depends_on: [backend]
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on: [frontend, backend]
+
+volumes:
+  dbdata:
+  caddy_data:

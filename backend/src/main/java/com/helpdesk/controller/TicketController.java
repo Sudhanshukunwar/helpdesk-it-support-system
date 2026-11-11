@@ -42,6 +42,11 @@ public class TicketController {
         return svc.updateStatus(id, r.status(), a.getName());
     }
 
+    @GetMapping("/{id}/history")
+    public List<HistoryResponse> history(@PathVariable Long id, Authentication a) {
+        return svc.history(id, a.getName());
+    }
+
     @GetMapping("/{id}/comments")
     public List<CommentResponse> comments(@PathVariable Long id, Authentication a) {
         return svc.comments(id, a.getName());

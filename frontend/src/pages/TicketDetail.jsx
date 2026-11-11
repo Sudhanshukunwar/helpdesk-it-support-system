@@ -9,6 +9,7 @@ export default function TicketDetail() {
   const { user } = useAuth();
   const [t, setT] = useState(null);
   const [comments, setComments] = useState([]);
+  const [history, setHistory] = useState([]);
   const [agents, setAgents] = useState([]);
   const [assignee, setAssignee] = useState('');
   const [msg, setMsg] = useState('');
@@ -16,8 +17,10 @@ export default function TicketDetail() {
 
   const load = async () => {
     try {
-      const [ticket, cs] = await Promise.all([api(`/api/tickets/${id}`), api(`/api/tickets/${id}/comments`)]);
-      setT(ticket); setComments(cs); setError('');
+      const [ticket, cs, hs] = await Promise.all([
+        api(`/api/tickets/${id}`), api(`/api/tickets/${id}/comments`), api(`/api/tickets/${id}/history`),
+      ]);
+      setT(ticket); setComments(cs); setHistory(hs); setError('');
     } catch (e) { setError(e.message); }
   };
   useEffect(() => { load(); }, [id]);
@@ -25,7 +28,7 @@ export default function TicketDetail() {
     if (user.role === 'ADMIN') api('/api/users/support').then(setAgents).catch(() => {});
   }, [user.role]);
 
-  const act = async (fn) => { try { setError(''); setT(await fn()); } catch (e) { setError(e.message); } };
+  const act = async (fn) => { try { setError(''); await fn(); await load(); } catch (e) { setError(e.message); } };
   const put = (path, body) => () => api(`/api/tickets/${id}/${path}`, { method: 'PUT', body });
 
   const send = async (e) => {
@@ -68,6 +71,17 @@ export default function TicketDetail() {
             <textarea rows={3} value={msg} onChange={(e) => setMsg(e.target.value)} placeholder="Write a reply" />
             <button className="btn primary" disabled={!msg.trim()}>Post comment</button>
           </form>
+
+          <h2 className="gap-top">Activity</h2>
+          {history.length === 0 && <p className="muted">No activity recorded yet.</p>}
+          <ol className="timeline">
+            {history.map((h) => (
+              <li key={h.id}>
+                <div>{h.details}</div>
+                <div className="muted small">{h.actorName} · {fmt(h.createdAt)}</div>
+              </li>
+            ))}
+          </ol>
         </section>
 
         <aside className="panel meta">

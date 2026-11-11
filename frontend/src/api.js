@@ -1,4 +1,6 @@
-const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+// VITE_API_URL: unset -> local dev backend; "same-origin" -> relative URLs (behind a reverse proxy); otherwise a full URL.
+const ENV_URL = import.meta.env.VITE_API_URL;
+const BASE = ENV_URL === undefined || ENV_URL === '' ? 'http://localhost:8080' : ENV_URL === 'same-origin' ? '' : ENV_URL;
 
 export function clearSession() {
   localStorage.removeItem('token');

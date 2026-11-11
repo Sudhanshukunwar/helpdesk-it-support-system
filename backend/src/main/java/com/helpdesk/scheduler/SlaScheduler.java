@@ -1,8 +1,10 @@
 package com.helpdesk.scheduler;
 
+import com.helpdesk.entity.HistoryAction;
 import com.helpdesk.entity.Role;
 import com.helpdesk.entity.TicketStatus;
 import com.helpdesk.repository.TicketRepository;
+import com.helpdesk.service.HistoryService;
 import com.helpdesk.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -18,6 +20,7 @@ import java.util.List;
 public class SlaScheduler {
     private final TicketRepository tickets;
     private final NotificationService notifications;
+    private final HistoryService history;
 
     @Scheduled(fixedRate = 60_000)
     @Transactional
@@ -26,6 +29,7 @@ public class SlaScheduler {
                 List.of(TicketStatus.OPEN, TicketStatus.IN_PROGRESS), LocalDateTime.now());
         for (var t : overdue) {
             t.setSlaBreached(true);
+            history.record(t, null, HistoryAction.SLA_BREACHED, "SLA due time passed");
             String msg = "SLA breached: ticket #" + t.getId() + " (" + t.getPriority() + ") " + t.getTitle();
             notifications.notifyRole(Role.ADMIN, msg, t.getId());
             if (t.getAssignedTo() != null) notifications.notify(t.getAssignedTo(), msg, t.getId());

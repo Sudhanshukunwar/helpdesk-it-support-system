@@ -145,3 +145,8 @@ tr.clickable:hover td { background: #f7faf9; }
 
 .notice { background: #e6f4f1; color: #0b524c; border: 1px solid #bfe0da; padding: 9px 12px; border-radius: var(--radius); margin: 10px 0; font-size: 14px; }
 .panel.narrow { max-width: 480px; }
+
+.gap-top { margin-top: 28px; }
+.timeline { list-style: none; margin: 0; padding: 0 0 0 14px; border-left: 2px solid var(--line); }
+.timeline li { position: relative; padding: 0 0 14px 16px; }
+.timeline li::before { content: ''; position: absolute; left: -22px; top: 6px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); border: 2px solid var(--panel); }
